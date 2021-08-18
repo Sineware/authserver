@@ -1,0 +1,31 @@
+{
+  "name": "sineware-authserver",
+  "version": "1.0.0",
+  "description": "Sineware Cloud Services Internal Service - Authentication+Authorization Server",
+  "main": "src/index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sineware/authserver.git"
+  },
+  "author": "Seshan Ravikumar",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Sineware/authserver/issues"
+  },
+  "homepage": "https://github.com/Sineware/authserver#readme",
+  "dependencies": {
+    "argon2": "^0.28.2",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "nodejs-snowflake": "^1.6.2",
+    "pg": "^8.7.1",
+    "uuid": "^8.3.2"
+  }
+}
