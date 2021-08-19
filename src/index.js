@@ -6,6 +6,9 @@ const argon2 = require('argon2');
 const { UniqueID } = require('nodejs-snowflake');
 const { v4: uuidv4 } = require('uuid');
 
+const registerOrganizationRoutes = require("./organization_routes");
+const registerUserRoutes = require("./user_routes");
+
 const uid = new UniqueID({
     machineID: process.env.MACHINE_ID,
     customEpoch: 1602547200 // Sineware Epoch: Oct 13, 2020
@@ -23,6 +26,7 @@ async function main() {
 
     app.use(express.json());
 
+    console.log("Registering Routes: ");
     app.get("/", async (req, res) => {
         res.send({"service": "sineware-authserver", ...(await pool.query("SELECT NOW()")).rows[0]});
     });
@@ -32,25 +36,28 @@ async function main() {
         console.log("debug: new user login:");
         console.log(req.body);
         // todo email or username!
-        const text = "SELECT * FROM users WHERE username = $1"
+        const text = "SELECT * FROM users WHERE username = $1 OR email = $1";
         const values = [req.body.username];
         try {
             const dbres = await pool.query(text, values);
             console.log(dbres);
             if(dbres.rows.length === 0) {
-                res.send({success: false, error: "Invalid Credentials"});
-                return;
+                throw {message: "Invalid Credentials"};
             } else {
-                if(await argon2.verify(dbres.rows[0].passhash, req.body.password)) {
-                    const accesskey = uuidv4();
-                    const text = "UPDATE users SET accesskey = $1 WHERE id = $2"
-                    const values = [accesskey, dbres.rows[0].id]
-                    await pool.query(text, values);
-                    res.send({success: true, accesskey});
-                    return;
+                let user = dbres.rows[0];
+                if(await argon2.verify(user.passhash, req.body.password)) {
+                    // todo: geoip, otp, etc
+                    if(user.accesskey === null) {
+                        const accesskey = uuidv4();
+                        const text = "UPDATE users SET accesskey = $1 WHERE id = $2";
+                        const values = [accesskey, dbres.rows[0].id];
+                        await pool.query(text, values);
+                        res.send({success: true, accesskey});
+                    } else {
+                        res.send({success: true, accesskey: user.accesskey});
+                    }
                 } else {
-                    res.send({success: false, error: "Invalid Credentials"});
-                    return;
+                    throw {message: "Invalid Credentials"};
                 }
             }
         } catch (err) {
@@ -63,7 +70,6 @@ async function main() {
         console.log("debug: new user registration:");
         console.log(req.body);
         const r = req.body;
-
         // Hash Password
         let passhash = await argon2.hash(r.password);
 
@@ -86,6 +92,9 @@ async function main() {
             res.send({success: false, error: err.message});
         }
     });
+
+    await registerOrganizationRoutes(app, prefix, pool, uid);
+    await registerUserRoutes(app, prefix, pool, uid);
 
     app.listen(port, () => {
         console.log(`HTTP Server listening at http://0.0.0.0:${port}`);
