@@ -5,9 +5,11 @@ const { Pool } = require("pg");
 const argon2 = require('argon2');
 const { UniqueID } = require('nodejs-snowflake');
 const { v4: uuidv4 } = require('uuid');
+const cors = require('cors')
 
 const registerOrganizationRoutes = require("./organization_routes");
 const registerUserRoutes = require("./user_routes");
+const registerVerifyRoutes = require("./verify_routes");
 
 const uid = new UniqueID({
     machineID: process.env.MACHINE_ID,
@@ -24,26 +26,28 @@ async function main() {
     const pool = new Pool();
     console.log((await pool.query("SELECT VERSION()")).rows[0])
 
+    app.use(cors());
     app.use(express.json());
 
     console.log("Registering Routes: ");
     app.get("/", async (req, res) => {
-        res.send({"service": "sineware-authserver", ...(await pool.query("SELECT NOW()")).rows[0]});
+        res.send({"service": "sineware-authserver", "machine_id": process.env.MACHINE_ID, ...(await pool.query("SELECT NOW()")).rows[0]});
     });
 
     // Authentication
+    // todo integrate external LDAP for enterprise
     app.post(prefix + "login", async (req, res) => {
         console.log("debug: new user login:");
         console.log(req.body);
-        // todo email or username!
-        const text = "SELECT * FROM users WHERE username = $1 OR email = $1";
-        const values = [req.body.username];
         try {
-            const dbres = await pool.query(text, values);
+            const dbres = await pool.query(
+                "SELECT * FROM users WHERE username = $1 OR email = $1",
+                [req.body.username]
+            );
             console.log(dbres);
             if(dbres.rows.length === 0) {
                 throw {message: "Invalid Credentials"};
-            } else {
+            } else if(dbres.rows.length === 1) {
                 let user = dbres.rows[0];
                 if(await argon2.verify(user.passhash, req.body.password)) {
                     // todo: geoip, otp, etc
@@ -95,6 +99,7 @@ async function main() {
 
     await registerOrganizationRoutes(app, prefix, pool, uid);
     await registerUserRoutes(app, prefix, pool, uid);
+    await registerVerifyRoutes(app, prefix, pool, uid);
 
     app.listen(port, () => {
         console.log(`HTTP Server listening at http://0.0.0.0:${port}`);
