@@ -16,7 +16,7 @@ async function registerVerifyRoutes(app, prefix, pool, uid) {
                     ...dbres.rows[0]
                 });
             } else {
-                throw {message: "Invalid Token"}
+                throw new Error("Invalid Token");
             }
 
         } catch(e) {
@@ -29,7 +29,7 @@ async function registerVerifyRoutes(app, prefix, pool, uid) {
                 res.send({success: false, error: "No token provided"});
             }
             console.log("Verifying Device: " + req.body.token);
-            throw {message: "Not implemented"}
+            throw new Error("Not Implemented");
         } catch(e) {
             res.send({success: false, error: e.message})
         }

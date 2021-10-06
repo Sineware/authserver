@@ -10,6 +10,7 @@ const cors = require('cors')
 const registerOrganizationRoutes = require("./organization_routes");
 const registerUserRoutes = require("./user_routes");
 const registerVerifyRoutes = require("./verify_routes");
+const registerDeviceRoutes = require("./device_routes");
 
 const uid = new UniqueID({
     machineID: process.env.MACHINE_ID,
@@ -80,7 +81,7 @@ async function main() {
         // Generate a Snowflake
         const ID = await uid.asyncGetUniqueID();
 
-        // Todo validation
+        // Todo validation (email etc)
         const text = "INSERT INTO users(id, username, email, fullname, displayname, passhash) VALUES($1, $2, $3, $4, $5, $6) RETURNING id";
         const values = [ID, r.username, r.email, r.fullname, r.displayname, passhash];
         try {
