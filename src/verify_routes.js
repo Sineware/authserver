@@ -3,6 +3,7 @@ async function registerVerifyRoutes(app, prefix, pool, uid) {
         try {
             if(req.body.token === undefined) {
                 res.send({success: false, error: "No token provided"});
+                return;
             }
             console.log("Verifying User: " + req.body.token);
 
