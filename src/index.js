@@ -30,7 +30,7 @@ async function main() {
     app.use(cors());
     app.use(express.json());
 
-    console.log("Registering Routes: ");
+    console.log("Registering Routes... ");
     app.get("/", async (req, res) => {
         res.send({"service": "sineware-authserver", "machine_id": process.env.MACHINE_ID, ...(await pool.query("SELECT NOW()")).rows[0]});
     });
@@ -101,6 +101,7 @@ async function main() {
     await registerOrganizationRoutes(app, prefix, pool, uid);
     await registerUserRoutes(app, prefix, pool, uid);
     await registerVerifyRoutes(app, prefix, pool, uid);
+    await registerDeviceRoutes(app, prefix, pool, uid);
 
     app.listen(port, () => {
         console.log(`HTTP Server listening at http://0.0.0.0:${port}`);
