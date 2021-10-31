@@ -30,7 +30,18 @@ async function registerVerifyRoutes(app, prefix, pool, uid) {
                 res.send({success: false, error: "No token provided"});
             }
             console.log("Verifying Device: " + req.body.token);
-            throw new Error("Not Implemented");
+            const dbres = await pool.query(
+                "SELECT * FROM devices WHERE token=$1 ",
+                [req.body.token]);
+            console.log(dbres);
+            if(dbres.rows.length === 1) {
+                res.send({
+                    success: true,
+                    ...dbres.rows[0]
+                });
+            } else {
+                throw new Error("Invalid Token");
+            }
         } catch(e) {
             res.send({success: false, error: e.message})
         }
