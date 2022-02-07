@@ -12,7 +12,14 @@ async function registerUserRoutes(app, prefix, pool, uid) {
             console.log(dbuserorgres);
 
             let user = dbuserres.rows[0];
-            let organizations = dbuserorgres.rows.map(x => x.orgid);
+            let organizations = [];
+            for(let org of dbuserorgres.rows) {
+                const orgDetails = await pool.query(
+                    "SELECT * FROM organizations WHERE id=$1",
+                    [org.orgid]
+                );
+                organizations.push(orgDetails.rows[0]);
+            }
 
             res.send({...user, organizations});
         } else {
